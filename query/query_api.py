@@ -36,11 +36,11 @@ def query(
             user.id, body.data_source_id, session
         )
         llm_context_manager = LLMContextManager(
-            user.id, session, body.business_context_preset_id
+            user.id, session
         )
         sql_exec_tools = get_sql_execution_tools(connections)
         tools = get_db_schema_tools(
-            session, connections, body.business_context_preset_id
+            session, connections
         )
         tools.extend(sql_exec_tools)
         thread_id =  uuid.uuid4()

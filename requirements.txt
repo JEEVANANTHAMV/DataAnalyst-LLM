@@ -4,4 +4,7 @@ SQLAlchemy
 langchain-core
 pandas
 langchain
+langchain-community
 sqlparse
+langchain-anthropic
+langchain-groq
