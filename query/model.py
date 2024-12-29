@@ -1,9 +1,11 @@
-from typing import Optional
+from typing import Optional, Callable
 
 from pydantic import BaseModel
 from sqlalchemy.orm import declarative_base
-import uuid
 from enum import Enum
+from cuid2 import cuid_wrapper
+db_id_generator: Callable[[], str] = cuid_wrapper()
+
 
 
 from sqlalchemy import (
@@ -29,7 +31,7 @@ class QueryRequestBody(BaseModel):
 
 class ExpertPipelineThread(DBModel):
     __tablename__ = "expert_pipeline_thread"
-    id = Column(String(36), primary_key=True, default=lambda: uuid.uuid4())
+    id = Column(String(36), primary_key=True, default=lambda: db_id_generator())
     expert_id = Column(String(36), nullable=True)
     user_id = Column(String(36), nullable=False)
     data_source_id = Column(String(36), nullable=True)
@@ -52,7 +54,7 @@ class ExpertPipelineThread(DBModel):
 
 class ExpertPipelineMessage(DBModel):
     __tablename__ = "expert_pipeline_message"
-    id = Column(String(36), primary_key=True, default=lambda: uuid.uuid4())
+    id = Column(String(36), primary_key=True, default=lambda: db_id_generator())
     user_id = Column(String(36), nullable=False)
     data_source_id = Column(String(36), nullable=True)
     thread_id = Column(String(36), nullable=False)
@@ -69,7 +71,7 @@ class ExpertPipelineMessage(DBModel):
 
 class ExpertPipelineStepOutput(DBModel):
     __tablename__ = "expert_pipeline_step_output"
-    id = Column(String(36), primary_key=True, default=lambda: uuid.uuid4())
+    id = Column(String(36), primary_key=True, default=lambda: db_id_generator())
     user_id = Column(String(36), nullable=False)
     data_source_id = Column(String(36), nullable=True)
     terminal = Column(Boolean, nullable=False)
@@ -111,7 +113,7 @@ class ExpertPipelineStepOutput(DBModel):
 
 class PipelineStepStatistics(DBModel):
     __tablename__ = "pipeline_step_statistics"
-    id = Column(String(36), primary_key=True, default=lambda: uuid.uuid4())
+    id = Column(String(36), primary_key=True, default=lambda: db_id_generator())
     step_output_id = Column(String(36), nullable=False)
     model_name = Column(String(36), nullable=False)
     client_info = Column(JSON, nullable=False)

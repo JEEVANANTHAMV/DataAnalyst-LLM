@@ -1,4 +1,3 @@
-import os
 from typing import Dict, Literal, Final
 
 from langchain_groq import ChatGroq
@@ -11,12 +10,12 @@ def get_groq_client(model_name, max_tokens=1000) -> ChatGroq:
     # TODO remove hardcoded key
     return ChatGroq(
         model=model_name,
-        groq_api_key="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",
+        groq_api_key="",
     )
 
 
 def get_anthropic_client(model_name, max_tokens=1000) -> ChatAnthropic:
-    return ChatAnthropic(model=model_name, max_tokens=max_tokens)
+    return ChatAnthropic(model=model_name, max_tokens=max_tokens,api_key='')
 
 
 def get_llm_client_info(
@@ -25,7 +24,7 @@ def get_llm_client_info(
     client_info = {
         "groq": {
             "client_name": "groq",
-            "api_key": "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",
+            "api_key": "",
         },
         "SONNET": {
             "client_name": "anthropic",
@@ -37,14 +36,6 @@ def get_llm_client_info(
 
 
 class AvailableModels:
-    VISUO_GPT_35_TURBO: Final = "visuo-gpt-35-turbo"
-    LLAMA3_70B_8192: Final = "llama3-70b-8192"
-    GPT_4O: Final = "gpt-4o-2024-08-06"
-    GPT_4O_MINI: Final = "gpt-4o-mini-2024-07-18"
+    LLAMA3_70B_8192: Final = "llama-3.3-70b-versatile"
     SONNET: Final = "claude-3-5-sonnet-20240620"
-    GEMINI_PRO: Final = "gemini-pro"
-    GPT_4_TURBO: Final = "gpt-4-turbo"
-    GEMINI_PRO_15: Final = "gemini-1.5-pro"
-    GEMINI_FLASH_15: Final = "gemini-1.5-flash"
-    GEMINI_PRO_15_EX: Final = "gemini-pro-experimental"
     GEMINI_FLASH_15_EX: Final = "gemini-flash-experimental"

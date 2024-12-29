@@ -17,9 +17,11 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import declarative_base
-import uuid
+from cuid2 import cuid_wrapper
 from .wrapper import PostgresWrapper
+from typing import Callable
 
+db_id_generator: Callable[[], str] = cuid_wrapper()
 
 # Declarative base for SQLAlchemy models
 DBModel = declarative_base()
@@ -98,7 +100,7 @@ class DatabaseConnectionRead(DatabaseConnectionCreate):
 
 class DatabaseConnection(DBModel):
     __tablename__ = "database_connections"
-    connection_id = Column(String(36), primary_key=True, default=uuid.uuid4())
+    connection_id = Column(String(36), primary_key=True, default=db_id_generator())
     user_id = Column(String(36), nullable=True)
     connection_name = Column(String(255), nullable=False)
     host = Column(String(255), nullable=True)

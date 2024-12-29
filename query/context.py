@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from model import ExpertPipelineStepOutput, ExpertPipelineMessage
+from .model import ExpertPipelineStepOutput, ExpertPipelineMessage
 
 
 class LLMContextManager:

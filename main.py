@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+from query.query_api import router as query_router
 
 app = FastAPI(
     openapi_url="/api/v1/openapi.json",
@@ -33,7 +34,7 @@ async def http_exception_handler(request, exc):
 # app.include_router(preview_router)
 # app.include_router(dwh_api_router)
 # # app.include_router(visualisation_router)
-# app.include_router(query_router)
+app.include_router(query_router)
 # app.include_router(thread_router)
 
 @app.get("/")

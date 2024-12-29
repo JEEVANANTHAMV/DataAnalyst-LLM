@@ -8,9 +8,9 @@ from sqlalchemy import create_engine, text
 
 from .base_wrapper import BaseWrapper
 
-POSTGRES = """Given an input question, first create a syntactically correct postgresql query to run.
+postgresql = """Given an input question, first create a syntactically correct postgresql query to run.
 
-DO the following according to postgres dialect.
+DO the following according to postgresql dialect.
 
 Unless the user specifies in the question a specific number of examples to obtain. You should only order according to the distance function.
 Never query for all columns from a table. You must query only the columns that are needed to answer the question. Wrap 
@@ -32,7 +32,7 @@ Adjust the threshold (0.3) as needed for more or less strict matching.
 
 class PostgresWrapper(BaseWrapper):
     def __init__(self, connection_string):
-        self.instructions = POSTGRES
+        self.instructions = postgresql
         self.engine = create_engine(connection_string)
 
     def get_llm_instructions(self):

@@ -254,7 +254,7 @@ def compare_json_objects(obj1, obj2):
     return result
 
 
-def make_schema_getter(session, db, business_context_preset_id: Optional[str]):
+def make_schema_getter(session, db):
     """
     Function factory to avoid late binding the db variable.
     """
@@ -296,12 +296,12 @@ def make_sql_executor(db: DatabaseConnectionRead, return_str: bool = True):
 
 
 def get_db_schema_tools(
-    session: Session, database_connections, business_context_preset_id: Optional[str]
+    session: Session, database_connections
 ) -> List[StructuredTool]:
     selected_database_connections = database_connections
     return [
         StructuredTool.from_function(
-            func=make_schema_getter(session, db, business_context_preset_id),
+            func=make_schema_getter(session, db),
             # The name must not have any white space
             name=f"{camel_case(db.connection_name)}SchemaGetter",
             description=f"useful for when you need to understand the schema of {db.connection_name} database",

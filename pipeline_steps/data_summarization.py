@@ -10,7 +10,7 @@ from connector.service import execute_custom_query
 from db import SessionLocal
 from query import get_llm_client_info, AvailableModels, get_anthropic_client
 from query.context import LLMContextManager
-from custom_exception import RetryablePipelineStepException
+from .custom_exception import RetryablePipelineStepException
 from query.pipeline import PipelineStep, PipelineStepOutput
 from query.model import PipelineStepType
 from .util import tuple_to_csv, sql_data_to_csv

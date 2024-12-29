@@ -9,7 +9,7 @@ from langchain_core.tools import StructuredTool
 
 from query import get_anthropic_client, get_llm_client_info, AvailableModels
 from query.context import LLMContextManager
-from custom_exception import RetryablePipelineStepException
+from .custom_exception import RetryablePipelineStepException
 from query.pipeline import PipelineStep, PipelineStepOutput
 from query.model import PipelineStepType
 from .yaml import YamlOutputParser

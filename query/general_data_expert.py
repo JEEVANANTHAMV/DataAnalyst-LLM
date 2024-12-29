@@ -4,10 +4,10 @@ from fastapi import HTTPException
 from langchain_core.tools import StructuredTool
 from sqlalchemy.orm import Session
 
-from model import ExpertIdEnum
-from context import LLMContextManager
-from pipeline import Pipeline, PipelineResult
-from service import query_pipeline
+from .model import ExpertIdEnum
+from .context import LLMContextManager
+from .pipeline import Pipeline, PipelineResult
+from .query_pipeline import query_pipeline
 
 
 class GeneralDataExpert:

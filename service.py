@@ -14,11 +14,12 @@ from query.model import (
     ExpertPipelineMessage,
     PipelineStepStatistics,
 )
-import uuid
-from connector.connector import DatabaseConnectionRead, SupportDwhDialect
+from cuid2 import cuid_wrapper
+from connector.connector import DatabaseConnectionRead
 from connector.service import DataSource, create_database_metadata
+from typing import Callable
 
-
+db_id_generator: Callable[[], str] = cuid_wrapper()
 
 class Service:
     def __init__(self, session: Session):
@@ -116,7 +117,7 @@ class Service:
             if isinstance(pipeline_output.error, str)
             else str(pipeline_output.error)
         )
-        id = uuid.uuid4()
+        id = db_id_generator()
 
         self.session.add(
             ExpertPipelineStepOutput(
@@ -162,7 +163,7 @@ class Service:
         statistics: List[PipelineStatisticsRead],
     ):
         for item in pipeline_step_outputs:
-            id = uuid.uuid4()
+            id = db_id_generator()
             self.session.add(
                 ExpertPipelineStepOutput(
                     id=id,
@@ -471,7 +472,7 @@ def get_connections_by_data_source(data_source_id: str, session: Session):
         raise HTTPException(status_code=404, detail="Data source not found")
     connections = []
     connection = DatabaseConnectionRead(
-        connection_id=uuid.uuid4(),
+        connection_id=db_id_generator(),
         db_name=data_source.database_name,
         connection_name=data_source.name,
         sql_dialect= 'postgresql',

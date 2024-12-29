@@ -15,123 +15,22 @@ from sqlalchemy import (
     ForeignKey,
     MetaData,
 )
-import uuid
-from datetime import timedelta, datetime
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import declarative_base, Session
 from typing_extensions import Optional
 
 from connector.connector import DatabaseConnectionRead
 from connector.connector import get_dwh_connector
-from . import schemas, get_dwh_dialect
+from . import schemas
+from cuid2 import cuid_wrapper
+from typing import Callable
+
+db_id_generator: Callable[[], str] = cuid_wrapper()
 
 DBModel = declarative_base()
 
 #TODO - connecting to my database as command
-DATA_WAREHOUSE = ""
-
-
-class DataImport(DBModel):
-    """
-    Represents a data import to the data warehouse through data lake (GCS).
-    """
-
-    __tablename__ = "data_imports"
-    id = Column(String(36), primary_key=True, default=lambda: uuid.uuid4())
-    name = Column(String, unique=True, nullable=False)
-    description = Column(String)
-    source_type = Column(String(36), nullable=False)
-    source_subtype = Column(String, nullable=False)
-    gcs_path = Column(String)
-    # TODO track additional meta data such as airbyte source config, airbyte connection id
-    status = Column(String(36), default="pending")
-    error_details = Column(Text, nullable=True)
-    time_created = Column(DateTime, default=func.current_timestamp(), nullable=True)
-    time_updated = Column(
-        DateTime,
-        default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
-        nullable=True,
-    )
-
-
-def get_data_import(db: Session, import_id: str) -> schemas.DataImportResponse:
-    data_import = db.query(DataImport).filter(DataImport.id == import_id).first()
-    if data_import is None:
-        raise HTTPException(status_code=404, detail="Data import not found")
-    return schemas.DataImportResponse(
-        id=data_import.id,
-        name=data_import.name,
-        description=data_import.description,
-        source_type=data_import.source_type,
-        source_subtype=data_import.source_subtype,
-        gcs_path=data_import.gcs_path,
-        status=data_import.status,
-        error_details=data_import.error_details,
-        time_created=data_import.time_created,
-        time_updated=data_import.time_updated,
-    )
-
-
-def list_data_imports(
-    db: Session, page: int = 1, size: int = 10, filter: Optional[bool] = False
-) -> schemas.PaginatedDataImportResponse:
-    """List data imports with pagination.
-
-    Parameters:
-    - db: Database session
-    - page: Page number (default: 1)
-    - size: Number of items per page (default: 10)
-
-    Returns:
-    - PaginatedDataImportResponse: Paginated list of data imports
-    """
-    total = db.query(DataImport).count()
-    pages = (total + size - 1) // size
-    one_day_ago = datetime.utcnow() - timedelta(days=1)
-    if filter:
-        data_imports = (
-            db.query(DataImport)
-            .filter(
-                DataImport.status == "ready",  # Filter by status 'ready'
-                DataImport.time_created
-                < one_day_ago,  # Filter for imports older than 1 day
-            )
-            .order_by(DataImport.time_created.desc())
-            .offset((page - 1) * size)
-            .limit(size)
-            .all()
-        )
-    else:
-        data_imports = (
-            db.query(DataImport)
-            .order_by(DataImport.time_created.desc())
-            .offset((page - 1) * size)
-            .limit(size)
-            .all()
-        )
-
-    return schemas.PaginatedDataImportResponse(
-        items=[
-            schemas.DataImportResponse(
-                id=di.id,
-                name=di.name,
-                description=di.description,
-                source_type=di.source_type,
-                source_subtype=di.source_subtype,
-                gcs_path=di.gcs_path,
-                status=di.status,
-                error_details=di.error_details,
-                time_created=di.time_created,
-                time_updated=di.time_updated,
-            )
-            for di in data_imports
-        ],
-        total=total,
-        page=page,
-        size=size,
-        pages=pages,
-    )
+DATA_WAREHOUSE = 'postgresql://jeeva:E30q5#mTfsKl19@35.198.119.144'
 
 
 class DataSource(DBModel):
@@ -143,7 +42,7 @@ class DataSource(DBModel):
     """
 
     __tablename__ = "data_sources"
-    id = Column(String(36), primary_key=True, default=lambda: uuid.uuid4())
+    id = Column(String(36), primary_key=True, default=lambda: db_id_generator())
     name = Column(String, unique=True, nullable=False)
     database_name = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
@@ -159,7 +58,7 @@ class DataSource(DBModel):
 class TableMetadata(DBModel):
     __tablename__ = "database_table_metadata"
     metadata_id = Column(
-        String(36), primary_key=True, default=lambda: uuid.uuid4()
+        String(36), primary_key=True, default=lambda: db_id_generator()
     )
     id = Column(String(36), ForeignKey("data_sources.id"))
     table_name = Column(String(255), nullable=False)
@@ -213,29 +112,6 @@ def create_database_metadata(db: Session, data_source: DataSource):
             db.refresh(new_col_metadata)
 
 
-def create_data_source(
-    db: Session, data_source: schemas.DataSourceCreate
-) -> schemas.DataSourceResponse:
-    if not validate_database_exists(data_source.database_name):
-        raise ValueError("Database does not exist in the data warehouse")
-
-    new_data_source = DataSource(
-        name=data_source.name,
-        database_name=data_source.database_name,
-    )
-    db.add(new_data_source)
-    db.commit()
-    db.refresh(new_data_source)
-    return schemas.DataSourceResponse(
-        id=new_data_source.id,
-        name=new_data_source.name,
-        database_name=new_data_source.database_name,
-        is_active=new_data_source.is_active,
-        time_created=new_data_source.time_created,
-        time_updated=new_data_source.time_updated,
-    )
-
-
 def get_data_source(db: Session, data_source_id: str) -> schemas.DataSourceResponse:
     data_source = db.query(DataSource).filter(DataSource.id == data_source_id).first()
     if data_source is None:
@@ -248,48 +124,6 @@ def get_data_source(db: Session, data_source_id: str) -> schemas.DataSourceRespo
         time_created=data_source.time_created,
         time_updated=data_source.time_updated,
     )
-
-
-def update_data_source(
-    db: Session, data_source_id: str, data_source: schemas.DataSourceUpdate
-) -> schemas.DataSourceResponse:
-    db_data_source = (
-        db.query(DataSource).filter(DataSource.id == data_source_id).first()
-    )
-    if db_data_source is None:
-        raise HTTPException(status_code=404, detail="Data source not found")
-
-    if (
-        data_source.database_name
-        and data_source.database_name != db_data_source.database_name
-    ):
-        if not validate_database_exists(data_source.database_name):
-            raise HTTPException(
-                status_code=400, detail="Database does not exist in the data warehouse"
-            )
-
-    for key, value in data_source.dict(exclude_unset=True).items():
-        setattr(db_data_source, key, value)
-
-    db.commit()
-    db.refresh(db_data_source)
-    return schemas.DataSourceResponse(
-        id=db_data_source.id,
-        name=db_data_source.name,
-        database_name=db_data_source.database_name,
-        is_active=db_data_source.is_active,
-        time_created=db_data_source.time_created,
-        time_updated=db_data_source.time_updated,
-    )
-
-
-def delete_data_source(db: Session, data_source_id: str) -> bool:
-    data_source = db.query(DataSource).filter(DataSource.id == data_source_id).first()
-    if data_source is None:
-        raise HTTPException(status_code=404, detail="Data source not found")
-    db.delete(data_source)
-    db.commit()
-    return True
 
 
 def list_data_sources(db: Session) -> List[schemas.DataSourceResponse]:
@@ -409,46 +243,6 @@ def execute_custom_query(database_id, query, page, limit, filters, session: Sess
     return con.execute_custom_query(query, page, limit, filters)
 
 
-def create_datasource_for_import(
-    database_name: str, data_import: DataImport, session: Session
-) -> bool:
-    # check if data source already exists
-    if session.query(DataSource).filter(DataSource.name == data_import.name).first():
-        logging.info(f"Data source {data_import.name} already exists")
-        return True
-
-    # create data source
-    data_source = DataSource(
-        name=data_import.name,
-        database_name=database_name,
-        is_active=True,
-    )
-    session.add(data_source)
-    session.commit()
-    logging.info(f"Created data source {data_import.name}")
-    return True
-
-
-def create_datasource_for_bq_import(
-    dataset_id, data_import: DataImport, session: Session
-) -> bool:
-    # check if data source already exists
-    if session.query(DataSource).filter(DataSource.name == data_import.name).first():
-        logging.info(f"Data source {data_import.name} already exists")
-        return True
-
-    # create data source
-    data_source = DataSource(
-        name=data_import.name,
-        database_name=dataset_id,
-        is_active=True,
-    )
-    session.add(data_source)
-    session.commit()
-    logging.info(f"Created data source {data_import.name}")
-    return True
-
-
 def get_dwh_engine(database_name: str):
     """Get a connection to the data warehouse database"""
     connection_string = f"{DATA_WAREHOUSE}/{database_name}"
@@ -463,7 +257,7 @@ def connector_from_db_name(database_name: str):
 
 
 def connector(connection_string):
-    return get_dwh_connector(get_dwh_dialect(), connection_string)
+    return get_dwh_connector('postgresql', connection_string)
 
 
 def query_database_connection(sql: str, database_name: str, as_dict: bool = False):
@@ -491,10 +285,10 @@ def get_connections_by_data_source(user_id: str, data_source_id: str, session: S
         raise HTTPException(status_code=404, detail="Data source not found")
     connections = []
     connection = DatabaseConnectionRead(
-        connection_id=uuid.uuid4(),
+        connection_id= db_id_generator(),
         db_name=data_source.database_name,
         connection_name=data_source.name,
-        sql_dialect=get_dwh_dialect(),
+        sql_dialect='postgresql',
         schema_ddl=None,
         # TODO add an instructions field to the data source table
         instructions="General",

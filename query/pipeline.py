@@ -4,8 +4,8 @@ from typing import Dict, Any, List
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel
 
-from context import LLMContextManager
-from model import PipelineStepType
+from .context import LLMContextManager
+from .model import PipelineStepType
 
 
 class PipelineStatisticsRead(BaseModel):

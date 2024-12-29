@@ -3,25 +3,31 @@ import time
 from sqlalchemy.orm import Session
 from db import get_session
 from service import Service
-from general_data_expert import (
+from .general_data_expert import (
     general_data_expert,
 )
-from model import QueryRequestBody
-from context import LLMContextManager
-from pipeline import PipelineResultRead
-from tools import get_db_schema_tools, get_sql_execution_tools
+from .model import QueryRequestBody
+from .context import LLMContextManager
+from .pipeline import PipelineResultRead
+from .tools import get_db_schema_tools, get_sql_execution_tools
 from service import get_connections_by_data_source
 import traceback
 import logging
-import uuid
+from typing import Annotated
+from .dependencies import AuthValidator
+from .user import User
 
+from typing import Callable
+from cuid2 import cuid_wrapper
+
+db_id_generator: Callable[[], str] = cuid_wrapper()
 
 router = APIRouter()
 
 @router.post("/query")
 def query(
     body: QueryRequestBody,
-    user,
+    user : Annotated[User, Depends(AuthValidator([]))],
     session: Session = Depends(get_session),
 ):
     start_time = time.time()  # start time
@@ -32,9 +38,7 @@ def query(
         if not body.data_source_id:
             raise HTTPException(status_code=400, detail="Data source ID is required")
 
-        connections = get_connections_by_data_source(
-            user.id, body.data_source_id, session
-        )
+        connections = get_connections_by_data_source(body.data_source_id, session)
         llm_context_manager = LLMContextManager(
             user.id, session
         )
@@ -43,8 +47,8 @@ def query(
             session, connections
         )
         tools.extend(sql_exec_tools)
-        thread_id =  uuid.uuid4()
-        message_id =  uuid.uuid4()
+        thread_id =  db_id_generator()
+        message_id =  db_id_generator()
         Service(session).new_expert_pipeline_thread(
             id=thread_id,
             expert_id=body.expert_id or general_data_expert.expert_id,
@@ -132,7 +136,7 @@ def query_with_thread_id(
             session, connections, body.business_context_preset_id
         )
         tools.extend(sql_exec_tools)
-        message_id = uuid.uuid4()
+        message_id = db_id_generator()
         Service(session).new_expert_pipeline_message(
             id=message_id,
             thread_id=thread_id,

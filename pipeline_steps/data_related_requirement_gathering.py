@@ -9,7 +9,7 @@ from pydantic.v1 import BaseModel
 
 from query import get_llm_client_info, AvailableModels, get_anthropic_client
 from query.context import LLMContextManager
-from custom_exception import RetryablePipelineStepException
+from .custom_exception import RetryablePipelineStepException
 from query.pipeline import PipelineStep, PipelineStepOutput
 from query.model import PipelineStepType
 from query.tools import get_connection_id_from_tools
@@ -240,9 +240,6 @@ class DataRelatedRequirementGatheringPipelineStep(PipelineStep):
         data: Dict[str, Any],
     ) -> PipelineStepOutput:
         try:
-            # llm = get_azure_openai_client(self.model)
-            # llm = get_openai_client(self.model)
-            # llm = get_groq_client(self.model)
             llm = get_anthropic_client(self.model)
 
             chat_history = context.get_chat_history(thread_id=thread_id, depth=-1)
@@ -273,6 +270,7 @@ class DataRelatedRequirementGatheringPipelineStep(PipelineStep):
 
             # keep only schema getter tools from tools
             tools = [tool for tool in tools if "SchemaGetter" in tool.name]
+            print(llm,tools,prompt_template)
             agent = create_tool_calling_agent(llm, tools=tools, prompt=prompt_template)
             agent_executor = AgentExecutor(
                 agent=agent,

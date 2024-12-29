@@ -5,13 +5,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 
-db_user = ""
-db_password = ""
-db_name = ""
-db_host = ""
+DB_HOST='35.198.119.144'
+DB_PORT=5432
+DB_USER='jeeva'
+DB_PASSWORD='E30q5#mTfsKl19'
+DB_NAME='jeeva_db'
 
 DATABASE_URL = (
-    f"postgresql://{db_user}:{db_password}@{db_host}/{db_name}?sslmode=require"
+    f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}?sslmode=require"
 )
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
